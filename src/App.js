@@ -28,7 +28,7 @@ const ListIcon = () => (
 
 // --- Componente: Item da Tarefa (TaskItem) ---
 const TaskItem = ({ task, onEdit, onDelete, onUpdateStatus }) => {
-    // ... (código existente sem alterações)
+
     const statusConfig = {
     pendente: { bg: 'bg-yellow-200', text: 'text-yellow-800', label: 'Pendente' },
     'em andamento': { bg: 'bg-blue-200', text: 'text-blue-800', label: 'Em Andamento' },
@@ -85,6 +85,104 @@ const TaskItem = ({ task, onEdit, onDelete, onUpdateStatus }) => {
             <DeleteIcon />
           </button>
         </div>
+      </div>
+    </div>
+  );
+};
+
+
+// --- Componente: Formulário de Tarefa (TaskForm) ---
+const TaskForm = ({ onSubmit, taskToEdit, onCancel }) => {
+  const getTodayString = () => new Date().toISOString().split('T')[0];
+
+  const [task, setTask] = useState({ title: '', description: '', category: 'Trabalho', dueDate: getTodayString() });
+
+  useEffect(() => {
+    if (taskToEdit) {
+      setTask({ ...taskToEdit, dueDate: taskToEdit.dueDate || getTodayString() });
+    } else {
+      setTask({ title: '', description: '', category: 'Trabalho', dueDate: getTodayString() });
+    }
+  }, [taskToEdit]);
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setTask(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (!task.title.trim()) return;
+    onSubmit(task);
+    setTask({ title: '', description: '', category: 'Trabalho', dueDate: getTodayString() });
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50 p-4">
+      <div className="bg-white p-8 rounded-xl shadow-2xl w-full max-w-md">
+        <h2 className="text-2xl font-bold mb-6 text-gray-800">{taskToEdit ? 'Editar Tarefa' : 'Nova Tarefa'}</h2>
+        <form onSubmit={handleSubmit}>
+          {/* Campos existentes: title, description, category */}
+           <div className="mb-4">
+            <label htmlFor="title" className="block text-gray-700 font-medium mb-1">Título</label>
+            <input
+              type="text"
+              id="title"
+              name="title"
+              value={task.title}
+              onChange={handleChange}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              required
+            />
+          </div>
+          <div className="mb-4">
+            <label htmlFor="description" className="block text-gray-700 font-medium mb-1">Descrição</label>
+            <textarea
+              id="description"
+              name="description"
+              value={task.description}
+              onChange={handleChange}
+              rows="3"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            ></textarea>
+          </div>
+          <div className="flex gap-4 mb-6">
+            <div className="w-1/2">
+                <label htmlFor="category" className="block text-gray-700 font-medium mb-1">Categoria</label>
+                <select
+                id="category"
+                name="category"
+                value={task.category}
+                onChange={handleChange}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                >
+                <option value="Trabalho">Trabalho</option>
+                <option value="Pessoal">Pessoal</option>
+                <option value="Estudos">Estudos</option>
+                </select>
+            </div>
+            <div className="w-1/2">
+                <label htmlFor="dueDate" className="block text-gray-700 font-medium mb-1">Data Venc.</label>
+                <input
+                    type="date"
+                    id="dueDate"
+                    name="dueDate"
+                    value={task.dueDate}
+                    onChange={handleChange}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    required
+                />
+            </div>
+          </div>
+          <div className="flex justify-end space-x-4">
+            <button type="button" onClick={onCancel} className="px-6 py-2 bg-gray-200 text-gray-800 rounded-lg font-semibold hover:bg-gray-300 transition-colors duration-200">
+              Cancelar
+            </button>
+            <button type="submit" className="px-6 py-2 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 transition-colors duration-200">
+              {taskToEdit ? 'Salvar' : 'Adicionar'}
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   );
