@@ -307,17 +307,19 @@ const TaskForm = ({ onSubmit, taskToEdit, onCancel }) => {
   );
 };
 
-
 // --- Componente: Lista de Tarefas (TaskList) ---
 const TaskList = ({ tasks, onEdit, onDelete, onUpdateStatus }) => {
-    
-    if (tasks.length === 0) {
-    return <p className="text-center text-gray-500 mt-8">Nenhuma tarefa encontrada. Que tal adicionar uma nova?</p>;
+  if (tasks.length === 0) {
+    return (
+      <p className="text-center text-gray-500 mt-8">
+        Nenhuma tarefa encontrada. Que tal adicionar uma nova?
+      </p>
+    );
   }
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      {tasks.map(task => (
+      {tasks.map((task) => (
         <TaskItem
           key={task.id}
           task={task}
@@ -326,6 +328,107 @@ const TaskList = ({ tasks, onEdit, onDelete, onUpdateStatus }) => {
           onUpdateStatus={onUpdateStatus}
         />
       ))}
+    </div>
+  );
+};
+
+// --- Componente: Calendário (Calendar) ---
+const Calendar = ({ tasks, onDateClick }) => {
+  const [currentDate, setCurrentDate] = useState(new Date());
+
+  const taskDates = useMemo(
+    () => new Set(tasks.filter((t) => t.dueDate).map((t) => t.dueDate)),
+    [tasks]
+  );
+
+  const changeMonth = (offset) => {
+    setCurrentDate((prev) => {
+      const newDate = new Date(prev);
+      newDate.setMonth(newDate.getMonth() + offset);
+      return newDate;
+    });
+  };
+
+  const year = currentDate.getFullYear();
+  const month = currentDate.getMonth();
+
+  const firstDayOfMonth = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+  const today = new Date();
+  const todayStr = `${today.getFullYear()}-${String(
+    today.getMonth() + 1
+  ).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+
+  const weekdays = ["D", "S", "T", "Q", "Q", "S", "S"];
+
+  return (
+    <div className="bg-white p-4 sm:p-6 rounded-lg shadow-lg">
+      <div className="flex justify-between items-center mb-4">
+        <button
+          onClick={() => changeMonth(-1)}
+          className="p-2 rounded-full hover:bg-gray-100"
+        >
+          &lt;
+        </button>
+        <h2 className="text-lg sm:text-xl font-bold text-gray-800">
+          {currentDate.toLocaleString("pt-BR", {
+            month: "long",
+            year: "numeric",
+          })}
+        </h2>
+        <button
+          onClick={() => changeMonth(1)}
+          className="p-2 rounded-full hover:bg-gray-100"
+        >
+          &gt;
+        </button>
+      </div>
+      <div className="grid grid-cols-7 gap-1 text-center text-xs sm:text-sm text-gray-500 font-medium">
+        {weekdays.map((day) => (
+          <div key={day} className="py-2">
+            {day}
+          </div>
+        ))}
+      </div>
+      <div className="grid grid-cols-7 gap-1">
+        {Array.from({ length: firstDayOfMonth }).map((_, i) => (
+          <div key={`empty-${i}`} />
+        ))}
+        {Array.from({ length: daysInMonth }).map((_, day) => {
+          const dayNumber = day + 1;
+          const dateStr = `${year}-${String(month + 1).padStart(
+            2,
+            "0"
+          )}-${String(dayNumber).padStart(2, "0")}`;
+          const hasTasks = taskDates.has(dateStr);
+          const isToday = dateStr === todayStr;
+
+          return (
+            <div key={dayNumber} className="relative pt-[100%]">
+              <button
+                onClick={() => onDateClick(dateStr)}
+                className={`absolute inset-0 flex items-center justify-center rounded-full text-sm transition-colors duration-200
+                                ${
+                                  isToday
+                                    ? "bg-indigo-500 text-white font-bold"
+                                    : "hover:bg-indigo-100"
+                                }
+                                ${
+                                  hasTasks && !isToday
+                                    ? "text-indigo-600 font-semibold"
+                                    : ""
+                                }`}
+              >
+                {dayNumber}
+                {hasTasks && (
+                  <span className="absolute bottom-1.5 h-1.5 w-1.5 bg-red-500 rounded-full"></span>
+                )}
+              </button>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 };
