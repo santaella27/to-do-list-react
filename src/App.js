@@ -579,3 +579,222 @@ const Login = ({ onLogin }) => {
     </div>
   );
 };
+
+// --- Componente Principal (App) ---
+export default function App() {
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [tasks, setTasks] = useState(() => {
+    const savedTasks = localStorage.getItem("tasks");
+    const today = new Date();
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const dayAfter = new Date(today);
+    dayAfter.setDate(dayAfter.getDate() + 2);
+
+    return savedTasks
+      ? JSON.parse(savedTasks)
+      : [
+          {
+            id: 1,
+            title: "Reunião de Projeto",
+            description: "Discutir o progresso.",
+            category: "Trabalho",
+            status: "pendente",
+            dueDate: today.toISOString().split("T")[0],
+          },
+          {
+            id: 2,
+            title: "Comprar mantimentos",
+            description: "Leite, pão, ovos.",
+            category: "Pessoal",
+            status: "em andamento",
+            dueDate: tomorrow.toISOString().split("T")[0],
+          },
+          {
+            id: 3,
+            title: "Estudar React Hooks",
+            description: "Focar em useEffect.",
+            category: "Estudos",
+            status: "concluída",
+            dueDate: today.toISOString().split("T")[0],
+          },
+          {
+            id: 4,
+            title: "Entregar relatório",
+            description: "Relatório financeiro do Q3.",
+            category: "Trabalho",
+            status: "pendente",
+            dueDate: dayAfter.toISOString().split("T")[0],
+          },
+        ];
+  });
+
+  const [statusFilter, setStatusFilter] = useState("todas");
+  const [dateFilter, setDateFilter] = useState(null); // YYYY-MM-DD
+  const [view, setView] = useState("list"); // 'list' ou 'calendar'
+  const [isFormVisible, setIsFormVisible] = useState(false);
+  const [taskToEdit, setTaskToEdit] = useState(null);
+
+  useEffect(() => {
+    localStorage.setItem("tasks", JSON.stringify(tasks));
+  }, [tasks]);
+
+  const handleDateClick = (dateStr) => {
+    setDateFilter(dateStr);
+    setView("list"); // Mudar para a lista ao clicar em uma data
+  };
+
+  const clearDateFilter = () => {
+    setDateFilter(null);
+  };
+
+  // Lógicas de manipulação de tarefas (addTask, updateTask, etc.)
+  const handleLogout = () => {
+    setIsLoggedIn(false);
+  };
+  const handleAddTask = (task) => {
+    const newTask = { ...task, id: Date.now(), status: "pendente" };
+    setTasks([newTask, ...tasks]);
+    setIsFormVisible(false);
+  };
+  const handleUpdateTask = (updatedTask) => {
+    setTasks(tasks.map((t) => (t.id === updatedTask.id ? updatedTask : t)));
+    setTaskToEdit(null);
+    setIsFormVisible(false);
+  };
+  const handleDeleteTask = (id) => {
+    setTasks(tasks.filter((t) => t.id !== id));
+  };
+  const handleUpdateStatus = (id, newStatus) => {
+    setTasks(tasks.map((t) => (t.id === id ? { ...t, status: newStatus } : t)));
+  };
+  const handleOpenForm = (task = null) => {
+    setTaskToEdit(task);
+    setIsFormVisible(true);
+  };
+
+  const filteredTasks = useMemo(() => {
+    return tasks.filter((task) => {
+      const statusMatch =
+        statusFilter === "todas" || task.status === statusFilter;
+      const dateMatch = !dateFilter || task.dueDate === dateFilter;
+      return statusMatch && dateMatch;
+    });
+  }, [tasks, statusFilter, dateFilter]);
+
+  const statusFilters = ["todas", "pendente", "em andamento", "concluída"];
+
+  if (!isLoggedIn) {
+    return <Login onLogin={setIsLoggedIn} />;
+  }
+
+  return (
+    <div className="bg-gray-100 min-h-screen font-sans">
+      {isFormVisible && (
+        <TaskForm
+          onSubmit={taskToEdit ? handleUpdateTask : handleAddTask}
+          taskToEdit={taskToEdit}
+          onCancel={() => {
+            setIsFormVisible(false);
+            setTaskToEdit(null);
+          }}
+        />
+      )}
+
+      <header className="bg-white shadow-md">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
+          <h1 className="text-2xl sm:text-3xl font-bold text-indigo-600">
+            Sistema de Tarefas
+          </h1>
+          <button
+            onClick={handleLogout}
+            className="px-4 py-2 bg-red-500 text-white rounded-lg font-semibold hover:bg-red-600 transition-colors duration-200 text-sm"
+          >
+            Sair
+          </button>
+        </div>
+      </header>
+
+      <main className="container mx-auto p-4 sm:p-6 lg:p-8">
+        <div className="flex flex-col sm:flex-row justify-between items-center mb-6">
+          <div className="flex items-center bg-white rounded-full p-1 shadow-sm mb-4 sm:mb-0">
+            <button
+              onClick={() => setView("list")}
+              className={`flex items-center px-4 py-2 text-sm font-semibold rounded-full ${
+                view === "list" ? "bg-indigo-600 text-white" : "text-gray-600"
+              }`}
+            >
+              {" "}
+              <ListIcon /> Lista{" "}
+            </button>
+            <button
+              onClick={() => setView("calendar")}
+              className={`flex items-center px-4 py-2 text-sm font-semibold rounded-full ${
+                view === "calendar"
+                  ? "bg-indigo-600 text-white"
+                  : "text-gray-600"
+              }`}
+            >
+              {" "}
+              <CalendarIcon /> Calendário{" "}
+            </button>
+          </div>
+          <button
+            onClick={() => handleOpenForm()}
+            className="w-full sm:w-auto px-6 py-3 bg-indigo-600 text-white font-semibold rounded-lg shadow-md hover:bg-indigo-700 transition-colors duration-300 transform hover:scale-105"
+          >
+            Adicionar Nova Tarefa
+          </button>
+        </div>
+
+        {view === "list" && (
+          <div className="mb-6">
+            <div className="flex flex-wrap gap-2">
+              {statusFilters.map((f) => (
+                <button
+                  key={f}
+                  onClick={() => {
+                    setStatusFilter(f);
+                    clearDateFilter();
+                  }}
+                  className={`px-4 py-2 text-sm font-medium rounded-full transition-colors duration-200 ${
+                    statusFilter === f && !dateFilter
+                      ? "bg-indigo-600 text-white shadow"
+                      : "bg-white text-gray-700 hover:bg-indigo-100"
+                  }`}
+                >
+                  {f.charAt(0).toUpperCase() + f.slice(1)}
+                </button>
+              ))}
+            </div>
+            {dateFilter && (
+              <div className="mt-4 p-3 bg-indigo-100 text-indigo-800 rounded-lg flex justify-between items-center">
+                <span className="font-medium text-sm">
+                  Mostrando tarefas para:{" "}
+                  {dateFilter.split("-").reverse().join("/")}
+                </span>
+                <button
+                  onClick={clearDateFilter}
+                  className="font-bold text-lg px-2 hover:bg-indigo-200 rounded-full"
+                >
+                  &times;
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {view === "list" ? (
+          <TaskList
+            tasks={filteredTasks}
+            onEdit={handleOpenForm}
+            onDelete={handleDeleteTask}
+            onUpdateStatus={handleUpdateStatus}
+          />
+        ) : (
+          <Calendar tasks={tasks} onDateClick={handleDateClick} />
+        )}
+      </main>
+    </div>
+  );
+}
